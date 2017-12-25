@@ -3,6 +3,7 @@
 import os
 import sys
 import uuid
+import hashlib
 import logging
 import argparse
 import ConfigParser
@@ -12,11 +13,10 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 def main(args, config, loglevel):
 
-    logging.info("Filename: %s" % args.argument)
+    logging.info("Filename: %s" % args.searchpath)
 
-    if os.path.exists(args.argument):
-        print 'Found the supplied filepath: %s' % args.argument
-        logging.info('Found the supplied filepath: %s' % args.argument)
+    if os.path.exists(args.searchpath):
+        logging.info('Found the supplied filepath: %s' % args.searchpath)
 
     # line for line in lines if pattern in line
     for root, dirs, files in os.walk(args.searchpath):
@@ -24,11 +24,28 @@ def main(args, config, loglevel):
             continue
 
         for f in files:
-            filename = os.path.join(root, f)
-            if (os.path.exists(filename)):
-                print '+'
+            fn = os.path.join(root, f)
+            if (os.path.exists(fn)):
+                hash = hash_bytestr_iter(
+                    file_as_blockiter(open(fn, 'rb')), hashlib.sha256(), True)
+                print '+ ' + fn + 'h: ' + hash
+
             else:
-                print 'F'
+                print 'F: ' + fn
+
+
+def hash_bytestr_iter(bytesiter, hasher, ashexstr=False):
+    for block in bytesiter:
+        hasher.update(block)
+    return (hasher.hexdigest() if ashexstr else hasher.digest())
+
+
+def file_as_blockiter(afile, blocksize=65536):
+    with afile:
+        block = afile.read(blocksize)
+        while len(block) > 0:
+            yield block
+            block = afile.read(blocksize)
 
 
 def init_config():
