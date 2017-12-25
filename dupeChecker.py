@@ -9,45 +9,27 @@ import ConfigParser
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
+
 def main(args, config, loglevel):
 
     logging.info("Filename: %s" % args.argument)
 
-    filenames = []
     if os.path.exists(args.argument):
         print 'Found the supplied filepath: %s' % args.argument
         logging.info('Found the supplied filepath: %s' % args.argument)
 
-        #line for line in lines if pattern in line
-        filenames = (path_prepender(p,d,f) for p,d,f in os.walk(args.argument))
+    # line for line in lines if pattern in line
+    for root, dirs, files in os.walk(args.searchpath):
+        if not files:
+            continue
 
-
-    files = []
-    for f in filenames:
-        files.extend(f)
-
-    for f in files:
-        if (os.path.exists(f)):
-            print '+'
-        else:
-           if False: print '******** : %s' %f
-
-def path_prepender(p,dirs,files):
-    """
-    Prepend path, p + d, to all elements of f
-    :param p:
-    :param d:
-    :param f:
-    :return:
-    """
-    filepaths =[]
-    print "p: %s" %p
-    print "d: "
-    print dirs
-    for d in dirs:
         for f in files:
-            filepaths.append(os.path.join(p,d,f))
-    return filepaths
+            filename = os.path.join(root, f)
+            if (os.path.exists(filename)):
+                print '+'
+            else:
+                print 'F'
+
 
 def init_config():
     """
@@ -87,12 +69,13 @@ def init_logging(config, loglevel):
 
 def init_parse_args():
     parser = argparse.ArgumentParser(
-        description="Compares files in a given directory for duplicates based on contents.",
+        description="Compares files in a given directory for \
+                duplicates based on contents.",
         epilog="commandline like '%(prog)s @params.conf'.",
         fromfile_prefix_chars='@')
 
     parser.add_argument(
-        "argument",
+        "searchpath",
         help="supply path to check for duplicates",
         metavar="PATH")
 
@@ -104,6 +87,7 @@ def init_parse_args():
 
     arguments = parser.parse_args()
     return arguments
+
 
 if __name__ == '__main__':
 
