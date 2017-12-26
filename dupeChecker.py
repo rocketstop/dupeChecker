@@ -13,6 +13,10 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 def main(args, config, loglevel):
 
+    fileHash = dict()
+    filecount = 0
+    dupes = set()
+
     logging.info("Filename: %s" % args.searchpath)
 
     if os.path.exists(args.searchpath):
@@ -24,14 +28,28 @@ def main(args, config, loglevel):
             continue
 
         for f in files:
+            filecount += 1
             fn = os.path.join(root, f)
-            if (os.path.exists(fn)):
-                hash = hash_bytestr_iter(
-                    file_as_blockiter(open(fn, 'rb')), hashlib.sha256(), True)
-                print '+ ' + fn + 'h: ' + hash
+            hash = getHash(fn)
+            if hash:
+                if hash in fileHash.keys():
+                    logging.info('Dupe!')
+                    dupes.add(hash)
+                    (fileHash[hash]).append(fn)
+                else:
+                    logging.info('New file: ' + fn)
+                    fileHash[hash] = list(fn)
 
-            else:
-                print 'F: ' + fn
+        logging.info('Total file count: ' + str(filecount))
+        logging.info('Total dupe count: ' + str(len(dupes)))
+
+
+def getHash(fn):
+    if (os.path.exists(fn)):
+        hash = hash_bytestr_iter(
+            file_as_blockiter(open(fn, 'rb')), hashlib.sha256(), True)
+        return hash
+    return None
 
 
 def hash_bytestr_iter(bytesiter, hasher, ashexstr=False):
