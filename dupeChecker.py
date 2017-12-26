@@ -147,3 +147,9 @@ if __name__ == '__main__':
     init_logging(config, loglevel)
 
     main(args, config, loglevel)
+
+# Todo : refactor for multiple filter types
+# Todo : add filter for EXIF creation time
+# Todo : add filter for similar filename (like suffix)
+# Todo : database for duplicates?
+# Todo : Parallelize?
