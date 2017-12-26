@@ -38,10 +38,13 @@ def main(args, config, loglevel):
                     (fileHash[hash]).append(fn)
                 else:
                     logging.info('New file: ' + fn)
-                    fileHash[hash] = list(fn)
+                    fileHash[hash] = [fn]
 
         logging.info('Total file count: ' + str(filecount))
         logging.info('Total dupe count: ' + str(len(dupes)))
+
+        for h in dupes:
+            logging.info(fileHash[h])
 
 
 def getHash(fn):
