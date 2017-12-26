@@ -13,23 +13,26 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 def main(args, config, loglevel):
 
+    # dictionary of file hashes
     fileHash = dict()
+    # current count of all files found in path
     filecount = 0
+    # set of the hashes of all duplicates
     dupes = set()
 
-    logging.info("Filename: %s" % args.searchpath)
+    logging.info("Specified search path: %s" % args.searchpath)
 
     if os.path.exists(args.searchpath):
         logging.info('Found the supplied filepath: %s' % args.searchpath)
 
-    # line for line in lines if pattern in line
+    # mega-lists of components for all child paths of search path
     for root, dirs, files in os.walk(args.searchpath):
         if not files:
             continue
 
         for f in files:
-            filecount += 1
-            fn = os.path.join(root, f)
+            filecount += 1 # sanity check
+            fn = os.path.join(root, f) # get full path
             hash = getHash(fn)
             if hash:
                 if hash in fileHash.keys():
@@ -48,9 +51,16 @@ def main(args, config, loglevel):
 
 
 def getHash(fn):
+    """
+    Calculate hash of file contents
+    :param filename of file to hash
+    :return string, hash value or None if file doesn't exist
+    """
+    hashMethod = hashlib.sha256()
+
     if (os.path.exists(fn)):
         hash = hash_bytestr_iter(
-            file_as_blockiter(open(fn, 'rb')), hashlib.sha256(), True)
+            file_as_blockiter(open(fn, 'rb')), hashMethod, True)
         return hash
     return None
 
@@ -72,7 +82,7 @@ def file_as_blockiter(afile, blocksize=65536):
 def init_config():
     """
     Load configuration from config file
-    :return config:
+    :return config
     """
     config_logfilepath = os.path.join(BASE_PATH, 'dupeChecker.conf')
 
