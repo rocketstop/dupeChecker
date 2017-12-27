@@ -10,15 +10,62 @@ import ConfigParser
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
+class FileHeuristicCache:
+    def __init__(self, fn):
+        """
+        Construct an object that stores file comparison heuristics.
+        :param filename of file
+        """
+        self.fn = fn
+        self.hash = self.getHash()
+
+
+    def __eq__(self, other):
+        return self.hash == other.hash
+
+    def __str__(self):
+        return "<#%s>" % self.fn
+
+    def __repr__(self):
+        return str(self)
+
+    def getHash(self):
+        """
+        Calculate hash of file contents
+        :param filename of file to hash
+        :return string, hash value or None if file doesn't exist
+        """
+        hashMethod = hashlib.sha256()
+    
+        def hash_bytestr_iter(bytesiter, hasher, ashexstr=False):
+            for block in bytesiter:
+                hasher.update(block)
+            return (hasher.hexdigest() if ashexstr else hasher.digest())
+        
+        
+        def file_as_blockiter(afile, blocksize=65536):
+            with afile:
+                block = afile.read(blocksize)
+                while len(block) > 0:
+                    yield block
+                    block = afile.read(blocksize)
+
+
+        if (os.path.exists(self.fn)):
+            hash = hash_bytestr_iter(
+                file_as_blockiter(open(self.fn, 'rb')), hashMethod, True)
+            return hash
+        return None
+
 
 def main(args, config, loglevel):
 
-    # dictionary of file hashes
-    fileHash = dict()
     # current count of all files found in path
     filecount = 0
-    # set of the hashes of all duplicates
-    dupes = set()
+    # current count of duplicates found
+    dupecount = 0
+    # list of unique files
+    uniques = [] 
 
     logging.info("Specified search path: %s" % args.searchpath)
 
@@ -33,50 +80,20 @@ def main(args, config, loglevel):
         for f in files:
             filecount += 1 # sanity check
             fn = os.path.join(root, f) # get full path
-            hash = getHash(fn)
-            if hash:
-                if hash in fileHash.keys():
-                    logging.info('Dupe!')
-                    dupes.add(hash)
-                    (fileHash[hash]).append(fn)
-                else:
-                    logging.info('New file: ' + fn)
-                    fileHash[hash] = [fn]
-
+            candidate = FileHeuristicCache(fn)
+            if candidate in uniques:
+                logging.info('Dupe! - %s' % candidate.fn)
+                dupecount += 1
+            else:
+                logging.info('New file: ' + candidate.fn)
+                uniques.append(candidate)
+        
+        logging.info(str(uniques))
         logging.info('Total file count: ' + str(filecount))
-        logging.info('Total dupe count: ' + str(len(dupes)))
-
-        for h in dupes:
-            logging.info(fileHash[h])
+        logging.info('Total dupe count: ' + str(dupecount))
 
 
-def getHash(fn):
-    """
-    Calculate hash of file contents
-    :param filename of file to hash
-    :return string, hash value or None if file doesn't exist
-    """
-    hashMethod = hashlib.sha256()
 
-    if (os.path.exists(fn)):
-        hash = hash_bytestr_iter(
-            file_as_blockiter(open(fn, 'rb')), hashMethod, True)
-        return hash
-    return None
-
-
-def hash_bytestr_iter(bytesiter, hasher, ashexstr=False):
-    for block in bytesiter:
-        hasher.update(block)
-    return (hasher.hexdigest() if ashexstr else hasher.digest())
-
-
-def file_as_blockiter(afile, blocksize=65536):
-    with afile:
-        block = afile.read(blocksize)
-        while len(block) > 0:
-            yield block
-            block = afile.read(blocksize)
 
 
 def init_config():
