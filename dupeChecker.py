@@ -20,15 +20,22 @@ class FileHeuristicCache:
         self.fn = fn
         self.hash = self.getHash()
 
-
     def __eq__(self, other):
-        return self.hash == other.hash
+        if self.hash == other.hash:
+            return bool(self.hash)
+        return False
 
     def __str__(self):
-        return "<#%s>" % self.fn
+        return "<#%s#>" % self.fn
 
     def __repr__(self):
         return str(self)
+
+    def __hash__(self):
+        if self.hash == None:
+            # if we can't hash contents, fall back to filename
+            return hash(self.fn)
+        return hash(self.hash)
 
     def getHash(self):
         """
@@ -66,7 +73,7 @@ def main(args, config, loglevel):
     # current count of duplicates found
     dupecount = 0
     # list of unique files
-    uniques = [] 
+    uniques = set()
 
     logging.info("Specified search path: %s" % args.searchpath)
 
@@ -82,16 +89,19 @@ def main(args, config, loglevel):
             filecount += 1 # sanity check
             fn = os.path.join(root, f) # get full path
             candidate = FileHeuristicCache(fn)
-            if candidate in uniques:
+
+            if candidate in uniques: # for logging
                 logging.info('Dupe! - %s' % candidate.fn)
                 dupecount += 1
             else:
                 logging.info('New file: ' + candidate.fn)
-                uniques.append(candidate)
+
+            uniques.add(candidate)
         
         logging.info(str(uniques))
         logging.info('Total file count: ' + str(filecount))
         logging.info('Total dupe count: ' + str(dupecount))
+        logging.info('Total unique file count: ' + str(len(uniques)))
 
 def init_config():
     """
