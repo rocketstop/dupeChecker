@@ -151,5 +151,6 @@ if __name__ == '__main__':
 # Todo : refactor for multiple filter types
 # Todo : add filter for EXIF creation time
 # Todo : add filter for similar filename (like suffix)
+# Todo : Exclusions, leave some files/filetypes out
 # Todo : database for duplicates?
 # Todo : Parallelize?
