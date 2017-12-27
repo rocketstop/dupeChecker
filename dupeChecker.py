@@ -8,6 +8,7 @@ import logging
 import argparse
 import ConfigParser
 
+
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 class FileHeuristicCache:
@@ -92,10 +93,6 @@ def main(args, config, loglevel):
         logging.info('Total file count: ' + str(filecount))
         logging.info('Total dupe count: ' + str(dupecount))
 
-
-
-
-
 def init_config():
     """
     Load configuration from config file
@@ -165,7 +162,6 @@ if __name__ == '__main__':
 
     main(args, config, loglevel)
 
-# Todo : refactor for multiple filter types
 # Todo : add filter for EXIF creation time
 # Todo : add filter for similar filename (like suffix)
 # Todo : Exclusions, leave some files/filetypes out
