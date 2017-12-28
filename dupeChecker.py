@@ -96,10 +96,10 @@ def main(args, config, loglevel):
 
             uniques.add(candidate)
 
-        logging.info(str(uniques))
-        logging.info('Total file count: ' + str(filecount))
-        logging.info('Total dupe count: ' + str(dupecount))
-        logging.info('Total unique file count: ' + str(len(uniques)))
+    logging.info(str(uniques))
+    logging.info('Total file count: ' + str(filecount))
+    logging.info('Total dupe count: ' + str(dupecount))
+    logging.info('Total unique file count: ' + str(len(uniques)))
 
 
 def init_config():
