@@ -11,6 +11,7 @@ import ConfigParser
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
+
 class FileHeuristicCache:
     def __init__(self, fn):
         """
@@ -32,7 +33,7 @@ class FileHeuristicCache:
         return str(self)
 
     def __hash__(self):
-        if self.hash == None:
+        if self.hash is None:
             # if we can't hash contents, fall back to filename
             return hash(self.fn)
         return hash(self.hash)
@@ -40,24 +41,21 @@ class FileHeuristicCache:
     def getHash(self):
         """
         Calculate hash of file contents
-        :param filename of file to hash
         :return string, hash value or None if file doesn't exist
         """
         hashMethod = hashlib.sha256()
-    
+
         def hash_bytestr_iter(bytesiter, hasher, ashexstr=False):
             for block in bytesiter:
                 hasher.update(block)
             return (hasher.hexdigest() if ashexstr else hasher.digest())
-        
-        
+
         def file_as_blockiter(afile, blocksize=65536):
             with afile:
                 block = afile.read(blocksize)
                 while len(block) > 0:
                     yield block
                     block = afile.read(blocksize)
-
 
         if (os.path.exists(self.fn)):
             hash = hash_bytestr_iter(
@@ -86,22 +84,23 @@ def main(args, config, loglevel):
             continue
 
         for f in files:
-            filecount += 1 # sanity check
-            fn = os.path.join(root, f) # get full path
+            filecount += 1  # sanity check
+            fn = os.path.join(root, f)  # get full path
             candidate = FileHeuristicCache(fn)
 
-            if candidate in uniques: # for logging
+            if candidate in uniques:  # for logging
                 logging.info('Dupe! - %s' % candidate.fn)
                 dupecount += 1
             else:
                 logging.info('New file: ' + candidate.fn)
 
             uniques.add(candidate)
-        
+
         logging.info(str(uniques))
         logging.info('Total file count: ' + str(filecount))
         logging.info('Total dupe count: ' + str(dupecount))
         logging.info('Total unique file count: ' + str(len(uniques)))
+
 
 def init_config():
     """
