@@ -6,7 +6,11 @@ import uuid
 import hashlib
 import logging
 import argparse
-import ConfigParser
+import six
+if six.PY2:
+    import ConfigParser
+else:
+    from configparser import ConfigParser
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -110,7 +114,7 @@ def init_config():
     config_logfilepath = os.path.join(BASE_PATH, 'dupeChecker.conf')
 
     if not os.path.exists(config_logfilepath):
-        print 'Config file not found: %s' % config_logfilepath
+        print('Config file not found: {}'.format(config_logfilepath))
         sys.exit(1)
     config = ConfigParser.SafeConfigParser()
     config.read(config_logfilepath)

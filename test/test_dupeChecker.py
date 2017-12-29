@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
 import unittest
-import sys
-
-sys.path.append("..")
 
 import dupeChecker
 
