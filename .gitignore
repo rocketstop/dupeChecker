@@ -1,2 +1,6 @@
+*.pyc
 *.log
 .idea
+.tox/
+.cache/
+__pycache__/
