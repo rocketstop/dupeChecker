@@ -75,7 +75,9 @@ def main(args, config, loglevel):
     # current count of duplicates found
     dupecount = 0
     # list of unique files
+    filehash = dict()
     uniques = set()
+    dupes = set()
 
     logging.info("Specified search path: %s" % args.searchpath)
 
@@ -92,18 +94,27 @@ def main(args, config, loglevel):
             fn = os.path.join(root, f)  # get full path
             candidate = FileHeuristicCache(fn)
 
-            if candidate in uniques:  # for logging
+            if candidate in uniques:
                 logging.info('Dupe! - %s' % candidate.fn)
+                logging.debug('Adding to hash with key ' + str(candidate.hash))
+                logging.debug('Found: ' + str(filehash[candidate.hash]))
+                (filehash[candidate.hash]).append(candidate)
+                dupes.add(candidate.hash)
                 dupecount += 1
             else:
+                filehash[candidate.hash] = [candidate]
                 logging.info('New file: ' + candidate.fn)
+                logging.debug('Adding to hash with key ' + str(candidate.hash))
 
-            uniques.add(candidate)
+            uniques.add(candidate)  # Couldn't this be in the else above?
 
-        logging.info(str(uniques))
-        logging.info('Total file count: ' + str(filecount))
-        logging.info('Total dupe count: ' + str(dupecount))
-        logging.info('Total unique file count: ' + str(len(uniques)))
+    logging.info(str(uniques))
+    logging.info('Total file count: ' + str(filecount))
+    logging.info('Total dupe count: ' + str(dupecount))
+    logging.info('Total unique file count: ' + str(len(uniques)))
+
+    for d in dupes:
+        logging.info(str(d)+":"+str(filehash[d]))
 
 
 def init_config():
