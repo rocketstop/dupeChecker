@@ -92,8 +92,8 @@ def main(args, config, loglevel):
 
             if candidate in uniques:
                 logging.info('Dupe! - %s' % candidate.fn)
-                logging.debug('Appending to hash with key ' + str(candidate.hash))
-                logging.debug('Found: '+ str(filehash[candidate.hash]))
+                logging.debug('Adding to hash with key ' + str(candidate.hash))
+                logging.debug('Found: ' + str(filehash[candidate.hash]))
                 (filehash[candidate.hash]).append(candidate)
                 dupes.add(candidate.hash)
                 dupecount += 1
@@ -185,5 +185,6 @@ if __name__ == '__main__':
 # Todo : add filter for EXIF creation time
 # Todo : add filter for similar filename (like suffix)
 # Todo : Exclusions, leave some files/filetypes out
+# Todo : Add configparser for Python 3 (if sys.version_info >= (3,0) import)
 # Todo : database for duplicates?
 # Todo : Parallelize?
