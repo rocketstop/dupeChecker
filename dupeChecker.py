@@ -2,11 +2,11 @@
 
 import os
 import sys
-import uuid
 import hashlib
 import logging
 import argparse
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
 from time import time
 from configparser import ConfigParser
 
@@ -62,6 +62,8 @@ class FileHeuristicCache:
         if (os.path.exists(self.fn)):
             hash = hash_bytestr_iter(
                 file_as_blockiter(open(self.fn, 'rb')), hashMethod, True)
+            logging.debug('Generating hash for: ' + str(self.fn))
+            logging.debug('Hash ' + str(hash))
             return hash
         return None
 
@@ -73,6 +75,7 @@ class DuplicateSearch:
         Construct instance to find and store results of search
         :param search path
         """
+        self.max_workers = int(config.get('Engine', 'threads', fallback='1'))
         self.searchpath = path
         self.filecount = 0
         self.dupecount = 0
@@ -89,7 +92,22 @@ class DuplicateSearch:
     def __repr__(self):
         return str(self)
 
+    def show_dupes(self):
+        for d in self.dupes:
+            logging.info(str(self.filehash[d]))
+
+    def report(self):
+        logging.info(str(self.uniques))
+        logging.info('Total file count: ' + str(self.filecount))
+        logging.info('Total dupe count: ' + str(self.dupecount))
+        logging.info('Total unique file count: ' + str(len(self.uniques)))
+
     def files(self):
+        """
+        Filename generator, returns all files found
+        at DuplicateSearch path
+        :return filename, generated
+        """
         if os.path.exists(self.searchpath):
             logging.info('Found the search path: %s' % self.searchpath)
 
@@ -99,43 +117,54 @@ class DuplicateSearch:
                 for f in files:
                     yield os.path.join(root, f)
 
+    def do(self, callback):
+        """
+        Construct a list of FileHeuristicCache instances to be created
+        asynchronously through ThreadPoolExecutor
+        :return list of scheduled tasks, as Futures
+        """
+        with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
+            tasks = {ex.submit(FileHeuristicCache, f): f for f in self.files()}
+            logging.info('Scheduling %d tasks with %d threads'
+                         % (len(tasks), self.max_workers))
+            for future in as_completed(tasks):
+                try:
+                    result = future.result()
+                except Exception as e:
+                    logging.info('Exception! %s' % (e))
+                else:
+                    callback(result)
+
+        return tasks
+
+    def handle(self, result):
+
+        self.filecount += 1  # sanity check
+
+        if result in self.uniques:
+            logging.debug('Dupe! - %s' % result.fn)
+            logging.debug('Dupe! Hash - %s' % str(result.hash))
+            logging.debug('Found: %s' % str(self.filehash[result.hash]))
+            (self.filehash[result.hash]).append(result)
+            self.dupes.add(result.hash)
+            self.dupecount += 1
+        else:
+            self.filehash[result.hash] = [result]
+            self.uniques.add(result)
+            logging.debug('New file: %s' % result.fn)
+            logging.debug('Adding to hash with key %s' % str(result.hash))
+
 
 def main(args, config, loglevel):
 
-    search = DuplicateSearch(args.searchpath)
     start_time = time()
+    search = DuplicateSearch(args.searchpath)
     logging.info("Specified search path: %s" % search.searchpath)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        future_candidate = {executor.submit(FileHeuristicCache, f): f for f in search.files()}
-        for future in concurrent.futures.as_completed(future_candidate):
-            try:
-                candidate = future.result()
-            except Exception as e:
-                logging.info('%c generated an exception: %s' % (candidate,e))
-            else:
-                search.filecount += 1  # sanity check
+    search.do(search.handle)
 
-                if candidate in search.uniques:
-                    logging.debug('Dupe! - %s' % candidate.fn)
-                    logging.debug('Adding to hash with key ' + str(candidate.hash))
-                    logging.debug('Found: ' + str(search.filehash[candidate.hash]))
-                    (search.filehash[candidate.hash]).append(candidate)
-                    search.dupes.add(candidate.hash)
-                    search.dupecount += 1
-                else:
-                    search.filehash[candidate.hash] = [candidate]
-                    search.uniques.add(candidate)
-                    logging.debug('New file: ' + candidate.fn)
-                    logging.debug('Adding to hash with key ' + str(candidate.hash))
-
-    logging.info(str(search.uniques))
-    logging.info('Total file count: ' + str(search.filecount))
-    logging.info('Total dupe count: ' + str(search.dupecount))
-    logging.info('Total unique file count: ' + str(len(search.uniques)))
-
-    for d in search.dupes:
-        logging.info(str(d) + ":" + str(search.filehash[d]))
+    search.report()
+    search.show_dupes()
 
     logging.info("Elapsed time: %f" % (time() - start_time))
 
@@ -155,23 +184,25 @@ def init_config():
     return config
 
 
-def init_logging(config, loglevel):
+def init_logging(logfile="log.log", loglevel=logging.INFO):
     """
     Initialize basic logging functionality
-    :param config
+    :param log filename
     :param loglevel
     """
+    file_fmt = '%(asctime)s %(thread)d %(message)s'
+    console_fmt = '%(message)s'
 
-    fmt = '%%(asctime)s [%s] %%(message)s' % str(uuid.uuid4())[:6]
-    logfile = os.path.join(BASE_PATH, config.get('Logging', 'log-filename'))
+    if (loglevel == logging.DEBUG):
+        console_fmt = file_fmt
 
     logging.basicConfig(level=loglevel,
-                        format=fmt,
+                        format=file_fmt,
                         filename=logfile)
 
     console = logging.StreamHandler()
     console.setLevel(loglevel)
-    formatter = logging.Formatter('%(message)s')
+    formatter = logging.Formatter(console_fmt)
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
@@ -203,9 +234,10 @@ if __name__ == '__main__':
     config = init_config()
     args = init_parse_args()
 
+    logfile = os.path.join(BASE_PATH, config.get('Logging', 'log-filename'))
     loglevel = logging.DEBUG if args.verbose else logging.INFO
 
-    init_logging(config, loglevel)
+    init_logging(logfile, loglevel)
 
     main(args, config, loglevel)
 
