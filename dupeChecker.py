@@ -89,9 +89,9 @@ class DuplicateSearch:
     def __repr__(self):
         return str(self)
 
-    def filelist(self):
+    def files(self):
         if os.path.exists(self.searchpath):
-            logging.info('Found the supplied filepath: %s' % self.searchpath)
+            logging.info('Found the search path: %s' % self.searchpath)
 
             for root, dirs, files in os.walk(self.searchpath):
                 if not files:
@@ -106,10 +106,9 @@ def main(args, config, loglevel):
     start_time = time()
     logging.info("Specified search path: %s" % search.searchpath)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        future_candidate = {executor.submit(FileHeuristicCache, f): f for f in search.filelist()}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        future_candidate = {executor.submit(FileHeuristicCache, f): f for f in search.files()}
         for future in concurrent.futures.as_completed(future_candidate):
-
             try:
                 candidate = future.result()
             except Exception as e:
@@ -214,4 +213,3 @@ if __name__ == '__main__':
 # Todo : add filter for similar filename (like suffix)
 # Todo : Exclusions, leave some files/filetypes out
 # Todo : database for duplicates?
-# Todo : Parallelize?
