@@ -68,16 +68,32 @@ class FileHeuristicCache:
         return None
 
 
+class DuplicateSearch:
+    def __init__(self, path):
+        """
+        Construct instance to find and store results of search
+        :param search path
+        """
+        self.searchpath = path
+        self.filecount = 0
+        self.dupecount = 0
+        # hashlist of all files and hashes
+        self.filehash = dict()
+        # set of all unique files
+        self.uniques = set()
+        # set of all duplicate files
+        self.dupes = set()
+
+    def __str__(self):
+        return "<#%s#>" % self.fn
+
+    def __repr__(self):
+        return str(self)
+
+
 def main(args, config, loglevel):
 
-    # current count of all files found in path
-    filecount = 0
-    # current count of duplicates found
-    dupecount = 0
-    # list of unique files
-    filehash = dict()
-    uniques = set()
-    dupes = set()
+    search = DuplicateSearch(args.searchpath)
 
     logging.info("Specified search path: %s" % args.searchpath)
 
@@ -90,31 +106,30 @@ def main(args, config, loglevel):
             continue
 
         for f in files:
-            filecount += 1  # sanity check
+            search.filecount += 1  # sanity check
             fn = os.path.join(root, f)  # get full path
             candidate = FileHeuristicCache(fn)
 
-            if candidate in uniques:
+            if candidate in search.uniques:
                 logging.info('Dupe! - %s' % candidate.fn)
                 logging.debug('Adding to hash with key ' + str(candidate.hash))
-                logging.debug('Found: ' + str(filehash[candidate.hash]))
-                (filehash[candidate.hash]).append(candidate)
-                dupes.add(candidate.hash)
-                dupecount += 1
+                logging.debug('Found: ' + str(search.filehash[candidate.hash]))
+                (search.filehash[candidate.hash]).append(candidate)
+                search.dupes.add(candidate.hash)
+                search.dupecount += 1
             else:
-                filehash[candidate.hash] = [candidate]
+                search.filehash[candidate.hash] = [candidate]
+                search.uniques.add(candidate)
                 logging.info('New file: ' + candidate.fn)
                 logging.debug('Adding to hash with key ' + str(candidate.hash))
 
-            uniques.add(candidate)  # Couldn't this be in the else above?
+    logging.info(str(search.uniques))
+    logging.info('Total file count: ' + str(search.filecount))
+    logging.info('Total dupe count: ' + str(search.dupecount))
+    logging.info('Total unique file count: ' + str(len(search.uniques)))
 
-    logging.info(str(uniques))
-    logging.info('Total file count: ' + str(filecount))
-    logging.info('Total dupe count: ' + str(dupecount))
-    logging.info('Total unique file count: ' + str(len(uniques)))
-
-    for d in dupes:
-        logging.info(str(d)+":"+str(filehash[d]))
+    for d in search.dupes:
+        logging.info(str(d) + ":" + str(search.filehash[d]))
 
 
 def init_config():
