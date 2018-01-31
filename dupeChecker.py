@@ -6,11 +6,9 @@ import uuid
 import hashlib
 import logging
 import argparse
-import six
-if six.PY2:
-    import ConfigParser
-else:
-    from configparser import ConfigParser
+import concurrent.futures
+from time import time
+from configparser import ConfigParser
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -69,6 +67,7 @@ class FileHeuristicCache:
 
 
 class DuplicateSearch:
+
     def __init__(self, path):
         """
         Construct instance to find and store results of search
@@ -90,38 +89,46 @@ class DuplicateSearch:
     def __repr__(self):
         return str(self)
 
+    def filelist(self):
+        if os.path.exists(self.searchpath):
+            logging.info('Found the supplied filepath: %s' % self.searchpath)
+
+            for root, dirs, files in os.walk(self.searchpath):
+                if not files:
+                    continue
+                for f in files:
+                    yield os.path.join(root, f)
+
 
 def main(args, config, loglevel):
 
     search = DuplicateSearch(args.searchpath)
+    start_time = time()
+    logging.info("Specified search path: %s" % search.searchpath)
 
-    logging.info("Specified search path: %s" % args.searchpath)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        future_candidate = {executor.submit(FileHeuristicCache, f): f for f in search.filelist()}
+        for future in concurrent.futures.as_completed(future_candidate):
 
-    if os.path.exists(args.searchpath):
-        logging.info('Found the supplied filepath: %s' % args.searchpath)
-
-    # mega-lists of components for all child paths of search path
-    for root, dirs, files in os.walk(args.searchpath):
-        if not files:
-            continue
-
-        for f in files:
-            search.filecount += 1  # sanity check
-            fn = os.path.join(root, f)  # get full path
-            candidate = FileHeuristicCache(fn)
-
-            if candidate in search.uniques:
-                logging.info('Dupe! - %s' % candidate.fn)
-                logging.debug('Adding to hash with key ' + str(candidate.hash))
-                logging.debug('Found: ' + str(search.filehash[candidate.hash]))
-                (search.filehash[candidate.hash]).append(candidate)
-                search.dupes.add(candidate.hash)
-                search.dupecount += 1
+            try:
+                candidate = future.result()
+            except Exception as e:
+                logging.info('%c generated an exception: %s' % (candidate,e))
             else:
-                search.filehash[candidate.hash] = [candidate]
-                search.uniques.add(candidate)
-                logging.info('New file: ' + candidate.fn)
-                logging.debug('Adding to hash with key ' + str(candidate.hash))
+                search.filecount += 1  # sanity check
+
+                if candidate in search.uniques:
+                    logging.debug('Dupe! - %s' % candidate.fn)
+                    logging.debug('Adding to hash with key ' + str(candidate.hash))
+                    logging.debug('Found: ' + str(search.filehash[candidate.hash]))
+                    (search.filehash[candidate.hash]).append(candidate)
+                    search.dupes.add(candidate.hash)
+                    search.dupecount += 1
+                else:
+                    search.filehash[candidate.hash] = [candidate]
+                    search.uniques.add(candidate)
+                    logging.debug('New file: ' + candidate.fn)
+                    logging.debug('Adding to hash with key ' + str(candidate.hash))
 
     logging.info(str(search.uniques))
     logging.info('Total file count: ' + str(search.filecount))
@@ -130,6 +137,8 @@ def main(args, config, loglevel):
 
     for d in search.dupes:
         logging.info(str(d) + ":" + str(search.filehash[d]))
+
+    logging.info("Elapsed time: %f" % (time() - start_time))
 
 
 def init_config():
@@ -142,7 +151,7 @@ def init_config():
     if not os.path.exists(config_logfilepath):
         print('Config file not found: {}'.format(config_logfilepath))
         sys.exit(1)
-    config = ConfigParser.SafeConfigParser()
+    config = ConfigParser()
     config.read(config_logfilepath)
     return config
 
