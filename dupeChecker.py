@@ -15,12 +15,12 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 class FileHeuristicCache:
-    def __init__(self, fn):
+    def __init__(self, filename):
         """
         Construct an object that stores file comparison heuristics.
         :param filename of file
         """
-        self.fn = fn
+        self.filename = filename
         self.hash = self.getHash()
 
     def __eq__(self, other):
@@ -29,7 +29,7 @@ class FileHeuristicCache:
         return False
 
     def __str__(self):
-        return "<#%s#>" % self.fn
+        return "<#%s#>" % self.filename
 
     def __repr__(self):
         return str(self)
@@ -37,7 +37,7 @@ class FileHeuristicCache:
     def __hash__(self):
         if self.hash is None:
             # if we can't hash contents, fall back to filename
-            return hash(self.fn)
+            return hash(self.filename)
         return hash(self.hash)
 
     def getHash(self):
@@ -59,10 +59,10 @@ class FileHeuristicCache:
                     yield block
                     block = afile.read(blocksize)
 
-        if (os.path.exists(self.fn)):
+        if (os.path.exists(self.filename)):
             hash = hash_bytestr_iter(
-                file_as_blockiter(open(self.fn, 'rb')), hashMethod, True)
-            logging.debug('Generating hash for: ' + str(self.fn))
+                file_as_blockiter(open(self.filename, 'rb')), hashMethod, True)
+            logging.debug('Generating hash for: ' + str(self.filename))
             logging.debug('Hash ' + str(hash))
             return hash
         return None
@@ -142,7 +142,7 @@ class DuplicateSearch:
         self.filecount += 1  # sanity check
 
         if result in self.uniques:
-            logging.debug('Dupe! - %s' % result.fn)
+            logging.debug('Dupe! - %s' % result.filename)
             logging.debug('Dupe! Hash - %s' % str(result.hash))
             logging.debug('Found: %s' % str(self.filehash[result.hash]))
             (self.filehash[result.hash]).append(result)
@@ -151,7 +151,7 @@ class DuplicateSearch:
         else:
             self.filehash[result.hash] = [result]
             self.uniques.add(result)
-            logging.debug('New file: %s' % result.fn)
+            logging.debug('New file: %s' % result.filename)
             logging.debug('Adding to hash with key %s' % str(result.hash))
 
 
