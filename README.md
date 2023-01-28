@@ -1,0 +1,1 @@
+dupechecker - a hash/content calculator with the intention of finding duplicate files in a designated set of folders

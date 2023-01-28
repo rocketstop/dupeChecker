@@ -7,11 +7,11 @@ import dupeChecker
 class testFileCompare(unittest.TestCase):
 
     def setUp(self):
-        self.fa = dupeChecker.FileHeuristicCache("./FileA.jpg")
-        self.fb = dupeChecker.FileHeuristicCache("./FileB.jpg")
-        self.fc = dupeChecker.FileHeuristicCache("./CopyA.jpg")
-        self.faToo = dupeChecker.FileHeuristicCache("./FileA.jpg")
-        self.fDne = dupeChecker.FileHeuristicCache("./DoesNotExist.jpg")
+        self.fa = dupeChecker.FileHeuristicCache("./data/FileA.jpg")
+        self.fb = dupeChecker.FileHeuristicCache("./data/FileB.jpg")
+        self.fc = dupeChecker.FileHeuristicCache("./data/CopyA.jpg")
+        self.faToo = dupeChecker.FileHeuristicCache("./data/FileA.jpg")
+        self.fDne = dupeChecker.FileHeuristicCache("./data/DoesNotExist.jpg")
 
     def test_hash(self):
         self.assertNotEqual(self.fa.hash, self.fb.hash)
@@ -26,7 +26,7 @@ class testFileCompare(unittest.TestCase):
         self.assertEqual(self.fDne.hash, None)
 
     def test_missing_not_equal(self):
-        fDneToo = dupeChecker.FileHeuristicCache("./DoesNotExist.jpg")
+        fDneToo = dupeChecker.FileHeuristicCache("./data/DoesNotExist.jpg")
         self.assertNotEqual(self.fDne, fDneToo)
 
 if __name__ == '__main__':
