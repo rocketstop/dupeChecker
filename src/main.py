@@ -73,8 +73,8 @@ def main(config, args, loglevel):
 
     search.do(search.handle)
 
-    search.report()
-    search.show_dupes()
+    # search.report()
+    # search.show_dupes()
 
     logging.info("Elapsed time: %f" % (time() - start_time))
 
