@@ -3,6 +3,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from file_cache import FileHeuristicCache
+from db_client import MongoHashClient
 
 
 class DuplicateSearch:
@@ -22,6 +23,10 @@ class DuplicateSearch:
         self.uniques = set()
         # set of all duplicate files
         self.dupes = set()
+        self.db_client = MongoHashClient(
+            config.get('Database', 'connection', fallback='mongodb://localhost:27017'),
+            config.get('Database', 'database_name', fallback='hash_database')
+        )
 
     def __str__(self):
         return "<#%s#>" % self.fn
@@ -54,7 +59,7 @@ class DuplicateSearch:
                 for f in files:
                     yield os.path.join(root, f)
 
-    def do(self, callback):
+    def do(self, callback) -> dict:
         """
         Construct a list of FileHeuristicCache instances to be created
         asynchronously through ThreadPoolExecutor
@@ -70,6 +75,7 @@ class DuplicateSearch:
                 except Exception as e:
                     logging.info('Exception! %s' % (e))
                 else:
+
                     callback(result)
 
         return tasks
@@ -79,7 +85,7 @@ class DuplicateSearch:
         self.filecount += 1  # sanity check
 
         if result in self.uniques:
-            logging.debug('Dupe! - %s' % result.fn)
+            logging.debug('Dupe! - %s' % result.filename)
             logging.debug('Dupe! Hash - %s' % str(result.hash))
             logging.debug('Found: %s' % str(self.filehash[result.hash]))
             (self.filehash[result.hash]).append(result)
@@ -88,5 +94,5 @@ class DuplicateSearch:
         else:
             self.filehash[result.hash] = [result]
             self.uniques.add(result)
-            logging.debug('New file: %s' % result.fn)
+            logging.debug('New file: %s' % result.filename)
             logging.debug('Adding to hash with key %s' % str(result.hash))
