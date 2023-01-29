@@ -23,13 +23,13 @@ class DuplicateSearch:
         self.uniques = set()
         # set of all duplicate files
         self.dupes = set()
-        self.db_client = MongoHashClient(
+        self.db_client: MongoHashClient = MongoHashClient(
             config.get('Database', 'connection', fallback='mongodb://localhost:27017'),
             config.get('Database', 'database_name', fallback='hash_database')
         )
 
     def __str__(self):
-        return "<#%s#>" % self.fn
+        return "<#%s#>" % self.searchpath
 
     def __repr__(self):
         return str(self)
@@ -39,7 +39,7 @@ class DuplicateSearch:
             logging.info(str(self.filehash[d]))
 
     def report(self):
-        logging.info(str(self.uniques))
+        # logging.info(str(self.uniques))
         logging.info('Total file count: ' + str(self.filecount))
         logging.info('Total dupe count: ' + str(self.dupecount))
         logging.info('Total unique file count: ' + str(len(self.uniques)))
@@ -83,6 +83,8 @@ class DuplicateSearch:
     def handle(self, result):
 
         self.filecount += 1  # sanity check
+
+        self.db_client.add_document({"filename": result.filename, "file_hash": result.hash})
 
         if result in self.uniques:
             logging.debug('Dupe! - %s' % result.filename)
