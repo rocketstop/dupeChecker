@@ -1,6 +1,7 @@
 from typing import Any, List
 
 import pymongo
+import time
 
 
 class MongoHashClient:
@@ -8,8 +9,11 @@ class MongoHashClient:
     def __init__(self, connection_string: str, hash_database: str):
         self._db_client = pymongo.MongoClient(connection_string)
 
+        t = time.localtime()
+        current_time = time.strftime("%H:%M:%S", t)
+        
         self._db = self._db_client[hash_database]
-        self._collection = self._db["file_hashes"]
+        self._collection = self._db["file_hashes_"+current_time]
 
     def add_document(self, document: dict) -> Any:
         if self._collection is not None:
