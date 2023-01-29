@@ -91,7 +91,9 @@ if __name__ == '__main__':
 
     main(config, args, loglevel)
 
-# TODO : add filter for EXIF creation time
-# TODO : add filter for similar filename (like suffix)
-# TODO : Exclusions, leave some files/filetypes out
-# TODO : database for duplicates?
+# TODO: add filter for EXIF creation time as another signal for duplicates
+# TODO: add filter for similar filename (like suffix)
+# TODO: Exclusions, leave some files/filetypes out
+# TODO: Submit tasks with another thread? Use a thread to generate tasks from filenames
+# TODO: database for duplicates?
+# TODO: remove text output and sorting metrics during search if using persistence
