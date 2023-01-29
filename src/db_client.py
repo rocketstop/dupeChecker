@@ -36,7 +36,7 @@ class MongoHashClient:
             duplicates = self._collection.aggregate(
                 [
                     {"$match": {"file_hash": {"$ne": None}}},
-                    {"$group": {"_id": "$file_hash", "files": {"$addToSet": "$file"}, "count": {"$sum": 1}}},
+                    {"$group": {"_id": "$file_hash", "files": {"$addToSet": "$filename"}, "count": {"$sum": 1}}},
                     {"$match": {"count": {"$gt": 1}}},
                     {"$project": {"file_hash": "$_id", "_id": 0, "count": 1, "files": 1}}
                 ]
