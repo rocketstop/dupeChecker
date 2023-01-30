@@ -7,3 +7,4 @@ __pycache__/
 venv
 .coverage
 .mypy_cache
+dupechecker.egg-info
