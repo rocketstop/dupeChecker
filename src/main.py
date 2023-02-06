@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import argparse
+import asyncio
 from configparser import ConfigParser
 from time import time
 from duplicate_search import DuplicateSearch
@@ -67,14 +68,14 @@ def init_parse_args():
 def main(config, args, loglevel):
 
     start_time = time()
-    search = DuplicateSearch(config, args.searchpath)
-    logging.info("Specified search path: %s" % search.searchpath)
+
+    filename_queue = asyncio.Queue(20)
+    hash_queue = asyncio.Queue()
+    search = DuplicateSearch(config, filename_queue, hash_queue, args.searchpath)
+    logging.info("Specified search path: %s" % search._searchpath)
     logging.info("Starting duplicate search")
 
-    search.do(search.handle)
-
-    # search.report()
-    # search.show_dupes()
+    asyncio.run(search.do())
 
     logging.info("Elapsed time: %f" % (time() - start_time))
 

@@ -11,7 +11,7 @@ class DbWorker:
             config.get('Database', 'database_name', fallback='hash_database')
         )
 
-    async def work(self):
+    async def do(self):
         while True:
             result = await self._queue.get()
             self._db_client.add_document(result)
