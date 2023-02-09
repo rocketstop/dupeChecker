@@ -1,7 +1,9 @@
 import asyncio
 import os
 import logging
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import ThreadPoolExecutor
+from asyncio import Future, Task
+from typing import List, Set
 
 from file_cache import FileHeuristicCache
 from db_worker import DbWorker
@@ -82,22 +84,33 @@ class FileHasher:
     def __init__(self, file_queue, hash_queue):
         self._file_queue = file_queue
         self._hash_queue = hash_queue
-        self._thread_pool = ThreadPoolExecutor(20)
+        self._executor = ThreadPoolExecutor(20)
+        self._futures: Set[Future] = set()
 
     async def do(self):
         while True:
             filename: str = await self._file_queue.get()
             logging.info("Got filename for hashing: " + filename)
-            f: Future = self._thread_pool.submit(FileHeuristicCache(filename))
-            f.add_done_callback(self.handle)
+            loop = asyncio.get_running_loop()
+            t: Task = asyncio.create_task(self.process(filename))
+            self._futures.add(t)
             self._file_queue.task_done()
 
-    async def handle(self, future: Future):
+    async def process(self, filename: str):
+        fhc: FileHeuristicCache = FileHeuristicCache(filename)
+        logging.info("Hashing for filename complete: " + filename)
+        await self._hash_queue.put({
+            "file_hash": fhc.hash,
+            "filename": fhc.filename
+        })
 
-            result = future.result()
-            logging.info("Hashing for filename complete: " + result.filename)
-            await self._hash_queue.put({
-                "file_hash": result.hash,
-                "filename": result.filename
-            })
+    # async def handle(self, future: Future):
+    #
+    #         result = future.result()
+    #         self._futures.remove(future)
+    #         logging.info("Hashing for filename complete: " + result.filename)
+    #         await self._hash_queue.put({
+    #             "file_hash": result.hash,
+    #             "filename": result.filename
+    #         })
 
