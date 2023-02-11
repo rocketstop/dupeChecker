@@ -1,0 +1,27 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    networks:
+      - mongo-net
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    volumes:
+      - ./mongo/data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped 
+    networks:
+    - mongo-net
+    ports:
+      - 8081:8081
+networks:
+  mongo-net:
+    name: mongo-net
